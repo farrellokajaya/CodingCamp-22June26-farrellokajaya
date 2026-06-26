@@ -1,0 +1,447 @@
+// ============================================================
+// 1. CONSTANTS & CONFIGURATION
+// ============================================================
+
+const CATEGORIES = ["Food", "Transport", "Fun"];
+
+const STORAGE_KEYS = {
+    transactions: "ebv_transactions",
+    theme: "ebv_theme",
+    spendingLimit: "ebv_spending_limit"
+};
+
+const CATEGORY_COLORS = {
+    Food: "#e76f51",
+    Transport: "#2a9d8f",
+    Fun: "#e9c46a"
+};
+
+const state = {
+    transactions: [],
+    sortOrder: "newest",
+    theme: "light",
+    spendingLimit: null
+};
+
+let chartInstance = null;
+
+// ============================================================
+// 2. DOM REFERENCES
+// ============================================================
+
+let transactionForm;
+let itemNameInput;
+let amountInput;
+let categorySelect;
+let transactionList;
+let totalDisplay;
+let sortControl;
+let themeToggle;
+let limitInput;
+let saveLimitButton;
+let limitError;
+let limitSummary;
+let limitPercentage;
+let limitProgressBar;
+let limitWarning;
+let limitDisplay;
+let spendingChart;
+let chartEmptyState;
+
+function cacheDOMElements() {
+    transactionForm    = document.getElementById("transaction-form");
+    itemNameInput      = document.getElementById("item-name");
+    amountInput        = document.getElementById("amount");
+    categorySelect     = document.getElementById("category");
+    transactionList    = document.getElementById("transaction-list");
+    totalDisplay       = document.getElementById("total-display");
+    sortControl        = document.getElementById("sort-control");
+    themeToggle        = document.getElementById("theme-toggle");
+    limitInput         = document.getElementById("limit-input");
+    saveLimitButton    = document.getElementById("save-limit-btn");
+    limitError         = document.getElementById("limit-error");
+    limitSummary       = document.getElementById("limit-summary");
+    limitPercentage    = document.getElementById("limit-percentage");
+    limitProgressBar   = document.getElementById("limit-progress-bar");
+    limitWarning       = document.getElementById("limit-warning");
+    limitDisplay       = document.getElementById("limit-display");
+    spendingChart      = document.getElementById("spending-chart");
+    chartEmptyState    = document.getElementById("chart-empty-state");
+}
+
+// ============================================================
+// 3. FORMATTING UTILITIES
+// ============================================================
+
+const idrFormatter = new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+});
+
+function formatIDR(amount) {
+    return idrFormatter.format(amount);
+}
+
+function calculateTotal(transactions) {
+    return transactions.reduce(
+        (sum, transaction) => sum + transaction.amount,
+        0
+    );
+}
+
+// ============================================================
+// 4. LOCAL STORAGE UTILITIES
+// ============================================================
+
+function isValidStoredTransaction(transaction) {
+    return (
+        transaction !== null &&
+        typeof transaction === "object" &&
+        typeof transaction.id === "string" &&
+        transaction.id.trim().length > 0 &&
+        typeof transaction.itemName === "string" &&
+        transaction.itemName.trim().length > 0 &&
+        Number.isFinite(transaction.amount) &&
+        transaction.amount > 0 &&
+        ["Food", "Transport", "Fun"].includes(transaction.category) &&
+        Number.isFinite(transaction.timestamp) &&
+        transaction.timestamp > 0
+    );
+}
+
+function loadTransactions() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEYS.transactions);
+
+        if (raw === null) {
+            return [];
+        }
+
+        const parsed = JSON.parse(raw);
+
+        if (!Array.isArray(parsed)) {
+            return [];
+        }
+
+        const seenIds = new Set();
+        const result = [];
+
+        for (const item of parsed) {
+            if (!isValidStoredTransaction(item)) {
+                continue;
+            }
+            if (seenIds.has(item.id)) {
+                continue;
+            }
+            seenIds.add(item.id);
+            result.push(item);
+        }
+
+        return result;
+    } catch (error) {
+        console.error("Unable to load transactions:", error);
+        return [];
+    }
+}
+
+function saveTransactions(transactions) {
+    try {
+        localStorage.setItem(
+            STORAGE_KEYS.transactions,
+            JSON.stringify(transactions)
+        );
+        return true;
+    } catch (error) {
+        console.error("Unable to save transactions:", error);
+        return false;
+    }
+}
+
+function loadTheme() {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEYS.theme);
+        if (stored === "light" || stored === "dark") {
+            return stored;
+        }
+        return "light";
+    } catch (error) {
+        console.error("Unable to load theme:", error);
+        return "light";
+    }
+}
+
+function saveTheme(theme) {
+    try {
+        localStorage.setItem(STORAGE_KEYS.theme, theme);
+    } catch (error) {
+        console.error("Unable to save theme:", error);
+    }
+}
+
+function loadSpendingLimit() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEYS.spendingLimit);
+
+        if (raw === null) {
+            return null;
+        }
+
+        const parsed = JSON.parse(raw);
+
+        if (Number.isFinite(parsed) && parsed > 0) {
+            return parsed;
+        }
+
+        return null;
+    } catch (error) {
+        console.error("Unable to load spending limit:", error);
+        return null;
+    }
+}
+
+function saveSpendingLimit(limit) {
+    try {
+        localStorage.setItem(
+            STORAGE_KEYS.spendingLimit,
+            JSON.stringify(limit)
+        );
+    } catch (error) {
+        console.error("Unable to save spending limit:", error);
+    }
+}
+
+// ============================================================
+// 5. VALIDATION
+// ============================================================
+
+function clearTransactionFormErrors() {
+    document.getElementById("item-name-error").textContent = "";
+    document.getElementById("amount-error").textContent = "";
+    document.getElementById("category-error").textContent = "";
+}
+
+function clearSpendingLimitError() {
+    limitError.textContent = "";
+}
+
+function validateTransactionForm(itemName, amount, category) {
+    clearTransactionFormErrors();
+
+    let isValid = true;
+
+    if (typeof itemName !== "string" || itemName.trim().length === 0) {
+        document.getElementById("item-name-error").textContent =
+            "Item name is required.";
+        isValid = false;
+    }
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+        document.getElementById("amount-error").textContent =
+            "Amount must be a positive number.";
+        isValid = false;
+    }
+
+    if (!CATEGORIES.includes(category)) {
+        document.getElementById("category-error").textContent =
+            "Please select a category.";
+        isValid = false;
+    }
+
+    return isValid;
+}
+
+function validateSpendingLimit(value) {
+    return Number.isFinite(value) && value > 0;
+}
+
+// ============================================================
+// 6. TRANSACTION OPERATIONS
+// ============================================================
+
+function generateTransactionId() {
+    if (
+        window.crypto &&
+        typeof window.crypto.randomUUID === "function"
+    ) {
+        return window.crypto.randomUUID();
+    }
+
+    return `transaction-${Date.now()}-${Math.random()
+        .toString(16)
+        .slice(2)}`;
+}
+
+function createTransaction(itemName, amount, category) {
+    return {
+        id: generateTransactionId(),
+        itemName,
+        amount,
+        category,
+        timestamp: Date.now()
+    };
+}
+
+function addTransaction(transaction) {
+    state.transactions.push(transaction);
+    saveTransactions(state.transactions);
+}
+
+function deleteTransaction(id) {
+    state.transactions = state.transactions.filter(
+        (transaction) => transaction.id !== id
+    );
+    saveTransactions(state.transactions);
+}
+
+function requestTransactionDeletion(id) {
+    const confirmed = window.confirm(
+        "Are you sure you want to delete this transaction?"
+    );
+
+    if (confirmed) {
+        deleteTransaction(id);
+    }
+}
+
+// ============================================================
+// 7. SORTING
+// ============================================================
+
+function getSortedTransactions(transactions, sortOrder) {
+    const sortedTransactions = [...transactions];
+
+    switch (sortOrder) {
+        case "newest":
+            sortedTransactions.sort(
+                (a, b) => b.timestamp - a.timestamp
+            );
+            break;
+        case "highest":
+            sortedTransactions.sort(
+                (a, b) => b.amount - a.amount
+            );
+            break;
+        case "lowest":
+            sortedTransactions.sort(
+                (a, b) => a.amount - b.amount
+            );
+            break;
+        case "category":
+            sortedTransactions.sort((a, b) => {
+                const categoryComparison = a.category.localeCompare(b.category);
+                if (categoryComparison !== 0) {
+                    return categoryComparison;
+                }
+                return b.timestamp - a.timestamp;
+            });
+            break;
+    }
+
+    return sortedTransactions;
+}
+
+// ============================================================
+// 8. RENDERING
+// ============================================================
+
+function renderTransactionList() {
+    transactionList.innerHTML = "";
+
+    if (state.transactions.length === 0) {
+        const emptyItem = document.createElement("li");
+        emptyItem.textContent = "No transactions yet. Add your first expense above.";
+        transactionList.appendChild(emptyItem);
+        return;
+    }
+
+    const sorted = getSortedTransactions(state.transactions, state.sortOrder);
+
+    for (const transaction of sorted) {
+        // <li class="transaction-item">
+        const listItem = document.createElement("li");
+        listItem.className = "transaction-item";
+
+        // <div class="transaction-info">
+        const infoDiv = document.createElement("div");
+        infoDiv.className = "transaction-info";
+
+        const nameElement = document.createElement("p");
+        nameElement.className = "transaction-name";
+        nameElement.textContent = transaction.itemName;
+
+        const categoryElement = document.createElement("span");
+        categoryElement.className = "transaction-category";
+        categoryElement.textContent = transaction.category;
+
+        infoDiv.appendChild(nameElement);
+        infoDiv.appendChild(categoryElement);
+
+        // <div class="transaction-actions">
+        const actionsDiv = document.createElement("div");
+        actionsDiv.className = "transaction-actions";
+
+        const amountElement = document.createElement("strong");
+        amountElement.className = "transaction-amount";
+        amountElement.textContent = formatIDR(transaction.amount);
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "delete-btn";
+        deleteButton.textContent = "Delete";
+        deleteButton.dataset.id = transaction.id;
+        deleteButton.setAttribute("aria-label", `Delete transaction ${transaction.itemName}`);
+
+        actionsDiv.appendChild(amountElement);
+        actionsDiv.appendChild(deleteButton);
+
+        listItem.appendChild(infoDiv);
+        listItem.appendChild(actionsDiv);
+
+        transactionList.appendChild(listItem);
+    }
+}
+
+function renderTotal(transactions) {
+    totalDisplay.textContent = formatIDR(calculateTotal(transactions));
+}
+
+function renderSpendingLimit(transactions, limit) {
+    if (limit === null) {
+        limitSummary.textContent = "Set a spending limit to track your budget.";
+        limitPercentage.textContent = "";
+        limitProgressBar.style.width = "0%";
+        limitProgressBar.setAttribute("aria-valuenow", "0");
+        limitWarning.textContent = "";
+        limitProgressBar.classList.remove("warning");
+        limitDisplay.classList.remove("warning");
+        return;
+    }
+
+    const total = calculateTotal(transactions);
+    const percentage = (total / limit) * 100;
+    const progressWidth = Math.min(percentage, 100);
+
+    limitSummary.textContent = `Spent: ${formatIDR(total)} of ${formatIDR(limit)}`;
+    limitPercentage.textContent = `${Math.round(percentage)}% used`;
+    limitProgressBar.style.width = `${progressWidth}%`;
+    limitProgressBar.setAttribute("aria-valuenow", String(Math.round(percentage)));
+
+    if (total >= limit) {
+        limitWarning.textContent = "You have reached or exceeded your spending limit.";
+        limitProgressBar.classList.add("warning");
+        limitDisplay.classList.add("warning");
+    } else {
+        limitWarning.textContent = "";
+        limitProgressBar.classList.remove("warning");
+        limitDisplay.classList.remove("warning");
+    }
+}
+
+function renderAllTransactionData() {
+    renderTransactionList();
+    renderTotal(state.transactions);
+    renderSpendingLimit(state.transactions, state.spendingLimit);
+    updateChart(state.transactions);
+}

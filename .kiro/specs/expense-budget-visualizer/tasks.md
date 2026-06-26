@@ -70,8 +70,8 @@ Build the full application across exactly three files: `index.html`, `css/style.
     - Style `#sort-control` select element
     - _Requirements: 9.7, 9.8, 9.9, 9.11, 9.12_
 
-- [ ] 3. Write the JavaScript foundation in `js/script.js` — constants, state, and DOM references
-  - [ ] 3.1 Add constants, configuration, and application state object
+- [x] 3. Write the JavaScript foundation in `js/script.js` — constants, state, and DOM references
+  - [x] 3.1 Add constants, configuration, and application state object
     - Declare `const CATEGORIES = ["Food", "Transport", "Fun"]`
     - Declare `const STORAGE_KEYS = { transactions: "ebv_transactions", theme: "ebv_theme", spendingLimit: "ebv_spending_limit" }`
     - Declare `const CATEGORY_COLORS = { Food: "#e76f51", Transport: "#2a9d8f", Fun: "#e9c46a" }`
@@ -79,33 +79,33 @@ Build the full application across exactly three files: `index.html`, `css/style.
     - Declare `let chartInstance = null`
     - _Requirements: 5.4, 6.1, 9.1_
 
-  - [ ] 3.2 Cache all DOM references
+  - [x] 3.2 Cache all DOM references
     - Select and store references to all interactive elements: `transactionForm`, `itemNameInput`, `amountInput`, `categorySelect`, `transactionList`, `totalDisplay`, `sortControl`, `themeToggle`, `limitInput`, `saveLimitButton`, `limitError`, `limitSummary`, `limitPercentage`, `limitProgressBar`, `limitWarning`, `limitDisplay`, `spendingChart`, `chartEmptyState`
     - Group DOM references in a `cacheDOMElements()` function called during `init()`
     - _Requirements: 9.1, 9.14_
 
-- [ ] 4. Implement formatting, Local Storage, and transaction validation utilities
-  - [ ] 4.1 Implement the IDR formatter and `calculateTotal`
+- [x] 4. Implement formatting, Local Storage, and transaction validation utilities
+  - [x] 4.1 Implement the IDR formatter and `calculateTotal`
     - Create `const idrFormatter = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 })`
     - Write `function formatIDR(amount)` returning `idrFormatter.format(amount)`
     - Write `function calculateTotal(transactions)` returning the arithmetic sum of all `transaction.amount` values; return 0 for an empty array
     - _Requirements: 3.1, 3.5_
 
-  - [ ] 4.2 Implement `isValidStoredTransaction` and the three Local Storage read/write pairs
+  - [x] 4.2 Implement `isValidStoredTransaction` and the three Local Storage read/write pairs
     - Write `function isValidStoredTransaction(transaction)` with the full validation logic from the design (type checks, trim checks, `Number.isFinite`, category check)
     - Write `function loadTransactions()` / `function saveTransactions(transactions)` with `try…catch`, JSON parse guard, array check, deduplication by ID, and record-level filtering
     - Write `function loadTheme()` / `function saveTheme(theme)` returning `"light"` as fallback for invalid values
     - Write `function loadSpendingLimit()` / `function saveSpendingLimit(limit)` returning `null` as fallback
     - _Requirements: 5.1, 5.2, 5.3, 5.5, 5.6, 5.7, 6.3, 6.4, 8.2, 8.3_
 
-  - [ ] 4.3 Implement transaction form validation and spending limit validation
+  - [x] 4.3 Implement transaction form validation and spending limit validation
     - Write `function validateTransactionForm(itemName, amount, category)` that sets/clears inline error spans and returns a boolean
     - Write `function validateSpendingLimit(value)` returning true only for a finite number greater than zero
     - Write `function clearTransactionFormErrors()` and `function clearSpendingLimitError()`
     - _Requirements: 1.4, 1.5, 1.7, 8.8_
 
-- [ ] 5. Implement transaction operations
-  - [ ] 5.1 Implement `generateTransactionId`, `createTransaction`, `addTransaction`, and `deleteTransaction`
+- [x] 5. Implement transaction operations
+  - [x] 5.1 Implement `generateTransactionId`, `createTransaction`, `addTransaction`, and `deleteTransaction`
     - Write `function generateTransactionId()` using `crypto.randomUUID()` with the timestamp-random fallback
     - Write `function createTransaction(itemName, amount, category)` returning a transaction object with all five required fields
     - Write `function addTransaction(transaction)` pushing to `state.transactions` and calling `saveTransactions`
@@ -113,28 +113,28 @@ Build the full application across exactly three files: `index.html`, `css/style.
     - Write `function requestTransactionDeletion(id)` using `window.confirm` before calling `deleteTransaction`
     - _Requirements: 1.2, 2.4, 2.5, 5.4_
 
-- [ ] 6. Implement sorting
-  - [ ] 6.1 Implement `getSortedTransactions`
+- [x] 6. Implement sorting
+  - [x] 6.1 Implement `getSortedTransactions`
     - Write `function getSortedTransactions(transactions, sortOrder)` beginning with `const sortedTransactions = [...transactions]`
     - Implement `newest` (timestamp desc), `highest` (amount desc), `lowest` (amount asc), and `category` (alphabetical asc, timestamp desc as tiebreaker) sort rules
     - Never mutate the source array
     - _Requirements: 7.1, 7.2, 7.3_
 
-- [ ] 7. Implement rendering functions
-  - [ ] 7.1 Implement `renderTransactionList`
+- [x] 7. Implement rendering functions
+  - [x] 7.1 Implement `renderTransactionList`
     - Write `function renderTransactionList()` that calls `getSortedTransactions(state.transactions, state.sortOrder)` to get display order
     - Build each `<li>` programmatically: set `nameElement.textContent = transaction.itemName` (never `innerHTML`)
     - Set `deleteButton.dataset.id` and `deleteButton.setAttribute("aria-label", ...)`
     - Show the empty-state message when the array is empty
     - _Requirements: 2.1, 2.2, 7.4, 7.5, 9.20_
 
-  - [ ] 7.2 Implement `renderTotal` and `renderSpendingLimit`
+  - [x] 7.2 Implement `renderTotal` and `renderSpendingLimit`
     - Write `function renderTotal(transactions)` updating `totalDisplay.textContent` with `formatIDR(calculateTotal(transactions))`
     - Write `function renderSpendingLimit(transactions, limit)`: if limit is null, show neutral placeholder and hide progress; otherwise calculate percentage, set `limitProgressBar` width to `Math.min(percentage, 100)%`, update `aria-valuenow`, show warning when `total >= limit`
     - Format displayed limit and total as IDR
     - _Requirements: 3.1, 3.2, 3.3, 3.5, 8.4, 8.5, 8.6, 8.7, 8.9_
 
-  - [ ] 7.3 Implement `renderAllTransactionData`
+  - [x] 7.3 Implement `renderAllTransactionData`
     - Write `function renderAllTransactionData()` that calls `renderTransactionList()`, `renderTotal(state.transactions)`, `renderSpendingLimit(state.transactions, state.spendingLimit)`, and `updateChart(state.transactions)`
     - This is the only function used after add/delete operations
     - _Requirements: 3.2, 3.3, 4.3, 8.7, 9.14_
