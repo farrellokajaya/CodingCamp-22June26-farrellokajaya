@@ -47,6 +47,7 @@ let limitWarning;
 let limitDisplay;
 let spendingChart;
 let chartEmptyState;
+let spendingLimitSection;
 
 function cacheDOMElements() {
     transactionForm    = document.getElementById("transaction-form");
@@ -67,6 +68,7 @@ function cacheDOMElements() {
     limitDisplay       = document.getElementById("limit-display");
     spendingChart      = document.getElementById("spending-chart");
     chartEmptyState    = document.getElementById("chart-empty-state");
+    spendingLimitSection = document.getElementById("spending-limit-section");
 }
 
 // ============================================================
@@ -302,7 +304,10 @@ function requestTransactionDeletion(id) {
 
     if (confirmed) {
         deleteTransaction(id);
+        return true;
     }
+
+    return false;
 }
 
 // ============================================================
@@ -351,6 +356,7 @@ function renderTransactionList() {
 
     if (state.transactions.length === 0) {
         const emptyItem = document.createElement("li");
+        emptyItem.className = "transaction-empty-state";
         emptyItem.textContent = "No transactions yet. Add your first expense above.";
         transactionList.appendChild(emptyItem);
         return;
@@ -373,6 +379,7 @@ function renderTransactionList() {
 
         const categoryElement = document.createElement("span");
         categoryElement.className = "transaction-category";
+        categoryElement.dataset.category = transaction.category;
         categoryElement.textContent = transaction.category;
 
         infoDiv.appendChild(nameElement);
@@ -414,8 +421,7 @@ function renderSpendingLimit(transactions, limit) {
         limitProgressBar.style.width = "0%";
         limitProgressBar.setAttribute("aria-valuenow", "0");
         limitWarning.textContent = "";
-        limitProgressBar.classList.remove("warning");
-        limitDisplay.classList.remove("warning");
+        spendingLimitSection.classList.remove("is-warning");
         return;
     }
 
@@ -430,12 +436,10 @@ function renderSpendingLimit(transactions, limit) {
 
     if (total >= limit) {
         limitWarning.textContent = "You have reached or exceeded your spending limit.";
-        limitProgressBar.classList.add("warning");
-        limitDisplay.classList.add("warning");
+        spendingLimitSection.classList.add("is-warning");
     } else {
         limitWarning.textContent = "";
-        limitProgressBar.classList.remove("warning");
-        limitDisplay.classList.remove("warning");
+        spendingLimitSection.classList.remove("is-warning");
     }
 }
 
@@ -445,3 +449,197 @@ function renderAllTransactionData() {
     renderSpendingLimit(state.transactions, state.spendingLimit);
     updateChart(state.transactions);
 }
+
+// ============================================================
+// 9. CHART MANAGEMENT
+// ============================================================
+
+function computeCategoryTotals(transactions) {
+    const totals = { Food: 0, Transport: 0, Fun: 0 };
+
+    for (const transaction of transactions) {
+        if (totals.hasOwnProperty(transaction.category)) {
+            totals[transaction.category] += transaction.amount;
+        }
+    }
+
+    return totals;
+}
+
+function initChart() {
+    const ctx = spendingChart.getContext("2d");
+
+    chartInstance = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+            labels: ["Food", "Transport", "Fun"],
+            datasets: [
+                {
+                    data: [0, 0, 0],
+                    backgroundColor: [
+                        CATEGORY_COLORS.Food,
+                        CATEGORY_COLORS.Transport,
+                        CATEGORY_COLORS.Fun
+                    ]
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: "bottom"
+                }
+            }
+        }
+    });
+}
+
+function updateChart(transactions) {
+    if (chartInstance === null) {
+        return;
+    }
+
+    const totals = computeCategoryTotals(transactions);
+    const allZero =
+        totals.Food === 0 && totals.Transport === 0 && totals.Fun === 0;
+
+    if (allZero) {
+        spendingChart.style.display = "none";
+        chartEmptyState.removeAttribute("hidden");
+        return;
+    }
+
+    chartEmptyState.setAttribute("hidden", "");
+    spendingChart.style.display = "";
+
+    chartInstance.data.datasets[0].data = [
+        totals.Food,
+        totals.Transport,
+        totals.Fun
+    ];
+
+    chartInstance.update();
+}
+
+// ============================================================
+// 10. THEME MANAGEMENT
+// ============================================================
+
+function applyTheme(theme) {
+    document.body.dataset.theme = theme;
+
+    if (theme === "dark") {
+        themeToggle.textContent = "Light Mode";
+        themeToggle.setAttribute("aria-pressed", "true");
+        themeToggle.setAttribute("aria-label", "Switch to light mode");
+    } else {
+        themeToggle.textContent = "Dark Mode";
+        themeToggle.setAttribute("aria-pressed", "false");
+        themeToggle.setAttribute("aria-label", "Switch to dark mode");
+    }
+}
+
+// ============================================================
+// 11. EVENT HANDLERS
+// ============================================================
+
+function handleFormSubmit(event) {
+    event.preventDefault();
+
+    const itemName = itemNameInput.value.trim();
+    const amount = Number(amountInput.value);
+    const category = categorySelect.value;
+
+    const isValid = validateTransactionForm(itemName, amount, category);
+
+    if (!isValid) {
+        return;
+    }
+
+    const transaction = createTransaction(itemName, amount, category);
+    addTransaction(transaction);
+
+    transactionForm.reset();
+    clearTransactionFormErrors();
+
+    renderAllTransactionData();
+}
+
+function handleTransactionListClick(event) {
+    const deleteBtn = event.target.closest(".delete-btn");
+
+    if (!deleteBtn) {
+        return;
+    }
+
+    const id = deleteBtn.dataset.id;
+    const wasDeleted = requestTransactionDeletion(id);
+
+    if (wasDeleted) {
+        renderAllTransactionData();
+    }
+}
+
+function handleSortChange() {
+    state.sortOrder = sortControl.value;
+    renderTransactionList();
+}
+
+function handleThemeToggle() {
+    const newTheme = state.theme === "light" ? "dark" : "light";
+    state.theme = newTheme;
+    saveTheme(newTheme);
+    applyTheme(newTheme);
+}
+
+function handleSaveSpendingLimit() {
+    const rawValue = limitInput.value;
+    const parsedValue = Number(rawValue);
+
+    if (!validateSpendingLimit(parsedValue)) {
+        clearSpendingLimitError();
+        limitError.textContent = "Please enter a valid spending limit greater than zero.";
+        return;
+    }
+
+    clearSpendingLimitError();
+    state.spendingLimit = parsedValue;
+    saveSpendingLimit(parsedValue);
+    renderSpendingLimit(state.transactions, state.spendingLimit);
+}
+
+// ============================================================
+// 12. EVENT LISTENER BINDING
+// ============================================================
+
+function bindEventListeners() {
+    transactionForm.addEventListener("submit", handleFormSubmit);
+    transactionList.addEventListener("click", handleTransactionListClick);
+    sortControl.addEventListener("change", handleSortChange);
+    themeToggle.addEventListener("click", handleThemeToggle);
+    saveLimitButton.addEventListener("click", handleSaveSpendingLimit);
+}
+
+// ============================================================
+// 13. APPLICATION INITIALIZATION
+// ============================================================
+
+function init() {
+    cacheDOMElements();
+
+    const storedTheme = loadTheme();
+    state.theme = storedTheme;
+    applyTheme(storedTheme);
+
+    state.transactions = loadTransactions();
+    state.spendingLimit = loadSpendingLimit();
+
+    state.sortOrder = "newest";
+
+    initChart();
+    bindEventListeners();
+    renderAllTransactionData();
+}
+
+document.addEventListener("DOMContentLoaded", init);

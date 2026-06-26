@@ -139,22 +139,22 @@ Build the full application across exactly three files: `index.html`, `css/style.
     - This is the only function used after add/delete operations
     - _Requirements: 3.2, 3.3, 4.3, 8.7, 9.14_
 
-- [ ] 8. Implement Chart.js integration
-  - [ ] 8.1 Implement `computeCategoryTotals`, `initChart`, and `updateChart`
+- [x] 8. Implement Chart.js integration
+  - [x] 8.1 Implement `computeCategoryTotals`, `initChart`, and `updateChart`
     - Write `function computeCategoryTotals(transactions)` summing amounts by Food, Transport, and Fun
     - Write `function initChart()` creating a single `Chart` instance on `#spending-chart` with type `"doughnut"`, using `CATEGORY_COLORS`, and assigning it to `chartInstance`
     - Write `function updateChart(transactions)` that calls `computeCategoryTotals`, checks if all totals are zero (hide canvas, show `chartEmptyState`), otherwise hides empty state, shows canvas, and updates `chartInstance.data.datasets[0].data` then calls `chartInstance.update()`
     - Guard against updating a null `chartInstance`
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 9. Implement theme management
-  - [ ] 9.1 Implement `applyTheme`, `loadTheme`, and `saveTheme`
+- [x] 9. Implement theme management
+  - [x] 9.1 Implement `applyTheme`, `loadTheme`, and `saveTheme`
     - Write `function applyTheme(theme)` setting `document.body.dataset.theme = theme`, updating `themeToggle.textContent` ("Dark Mode" / "Light Mode"), and updating `themeToggle.setAttribute("aria-pressed", ...)`
     - Ensure `loadTheme()` validates the stored string against `["light", "dark"]` and falls back to `"light"`
     - _Requirements: 6.1, 6.2, 6.4, 6.5_
 
-- [ ] 10. Implement event listeners and application initialization
-  - [ ] 10.1 Implement all event handler functions
+- [x] 10. Implement event listeners and application initialization
+  - [x] 10.1 Implement all event handler functions
     - Write `function handleFormSubmit(event)`: prevent default, read and trim values, convert amount to number, call `validateTransactionForm`, on valid: create and add transaction, reset form, call `renderAllTransactionData`
     - Write `function handleTransactionListClick(event)`: use event delegation to detect delete button clicks via `event.target.closest(".delete-btn")`, read `dataset.id`, call `requestTransactionDeletion(id)`, then call `renderAllTransactionData` after confirmed deletion
     - Write `function handleSortChange()`: update `state.sortOrder`, call `renderTransactionList()`
@@ -162,13 +162,13 @@ Build the full application across exactly three files: `index.html`, `css/style.
     - Write `function handleSaveSpendingLimit()`: read and parse limit input, validate, on valid: update `state.spendingLimit`, call `saveSpendingLimit`, call `renderSpendingLimit`; on invalid: call `clearSpendingLimitError` then show error
     - _Requirements: 1.2, 1.3, 2.4, 2.5, 6.1, 6.3, 7.2, 7.3, 8.1, 8.2, 8.8_
 
-  - [ ] 10.2 Implement `bindEventListeners` and the `init` function
+  - [x] 10.2 Implement `bindEventListeners` and the `init` function
     - Write `function bindEventListeners()` attaching all listeners: `transactionForm` submit, `transactionList` click (delegation), `sortControl` change, `themeToggle` click, `saveLimitButton` click
     - Write `function init()` calling in order: `cacheDOMElements()`, load and apply theme, load transactions and spending limit, set `state.sortOrder = "newest"`, call `initChart()`, call `bindEventListeners()`, call `renderAllTransactionData()`
     - Register `document.addEventListener("DOMContentLoaded", init)`
     - _Requirements: 5.2, 6.4, 8.3, 9.14, 9.19_
 
-- [ ] 11. Final checkpoint — Verify all features work together
+- [x] 11. Final checkpoint — Verify all features work together
   - Open `index.html` in a browser (or via Live Server) and manually verify:
     - Add transactions, confirm list updates, total updates, chart updates, and spending limit progress updates
     - Delete a transaction and confirm, then cancel a deletion
