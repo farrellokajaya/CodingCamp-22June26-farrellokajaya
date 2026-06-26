@@ -45,6 +45,7 @@ let limitPercentage;
 let limitProgressBar;
 let limitWarning;
 let limitDisplay;
+let limitProgressTrack;
 let spendingChart;
 let chartEmptyState;
 let spendingLimitSection;
@@ -66,6 +67,7 @@ function cacheDOMElements() {
     limitProgressBar   = document.getElementById("limit-progress-bar");
     limitWarning       = document.getElementById("limit-warning");
     limitDisplay       = document.getElementById("limit-display");
+    limitProgressTrack = document.querySelector(".progress-track");
     spendingChart      = document.getElementById("spending-chart");
     chartEmptyState    = document.getElementById("chart-empty-state");
     spendingLimitSection = document.getElementById("spending-limit-section");
@@ -419,7 +421,7 @@ function renderSpendingLimit(transactions, limit) {
         limitSummary.textContent = "Set a spending limit to track your budget.";
         limitPercentage.textContent = "";
         limitProgressBar.style.width = "0%";
-        limitProgressBar.setAttribute("aria-valuenow", "0");
+        limitProgressTrack.setAttribute("aria-valuenow", "0");
         limitWarning.textContent = "";
         spendingLimitSection.classList.remove("is-warning");
         return;
@@ -432,7 +434,7 @@ function renderSpendingLimit(transactions, limit) {
     limitSummary.textContent = `Spent: ${formatIDR(total)} of ${formatIDR(limit)}`;
     limitPercentage.textContent = `${Math.round(percentage)}% used`;
     limitProgressBar.style.width = `${progressWidth}%`;
-    limitProgressBar.setAttribute("aria-valuenow", String(Math.round(percentage)));
+    limitProgressTrack.setAttribute("aria-valuenow", String(Math.round(percentage)));
 
     if (total >= limit) {
         limitWarning.textContent = "You have reached or exceeded your spending limit.";
@@ -458,7 +460,7 @@ function computeCategoryTotals(transactions) {
     const totals = { Food: 0, Transport: 0, Fun: 0 };
 
     for (const transaction of transactions) {
-        if (totals.hasOwnProperty(transaction.category)) {
+        if (Object.prototype.hasOwnProperty.call(totals, transaction.category)) {
             totals[transaction.category] += transaction.amount;
         }
     }

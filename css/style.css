@@ -731,6 +731,13 @@ select.is-invalid {
    5. RESPONSIVE BREAKPOINTS, FOCUS STYLES & SORT CONTROL
    ========================================================================== */
 
+/* Base: form and chart sections stack with a gap on mobile */
+.form-chart-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+}
+
 /* ---- Visible keyboard focus styles (WCAG 2.4.7) ---- */
 button:focus-visible,
 input:focus-visible,
