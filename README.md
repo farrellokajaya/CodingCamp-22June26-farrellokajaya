@@ -82,8 +82,6 @@ Open `index.html` directly in a modern browser, or use a local static server:
 # Python
 python -m http.server 8080
 
-# Node.js (no install needed)
-npx serve .
 ```
 
 No compilation or installation step is required.
@@ -92,7 +90,7 @@ No compilation or installation step is required.
 
 ## Browser Support
 
-Tested against current versions of Chrome, Firefox, Edge, and Safari.
+Designed to work in current versions of Chrome, Firefox, Edge, and Safari.
 
 ---
 
@@ -103,3 +101,8 @@ Tested against current versions of Chrome, Firefox, Edge, and Safari.
 | `ebv_transactions`   | JSON array of transaction objects |
 | `ebv_theme`          | `"light"` or `"dark"`          |
 | `ebv_spending_limit` | Positive number (JSON)         |
+
+
+## Live Demo
+
+[Open Expense & Budget Visualizer](https://farrellokajaya.github.io/CodingCamp-22June26-farrellokajaya/)
